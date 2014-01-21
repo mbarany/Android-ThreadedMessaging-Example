@@ -1,6 +1,6 @@
 Android-ThreadedMessaging-Example
 =================================
-An example Android App for Threaded Messaging.
+An example Android App for Threaded Messaging. Supports a minSdk of 14.
 
 Setup
 =====
