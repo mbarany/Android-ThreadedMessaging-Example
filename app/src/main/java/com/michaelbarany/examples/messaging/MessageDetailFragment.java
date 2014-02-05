@@ -38,6 +38,9 @@ public class MessageDetailFragment extends Fragment {
         );
         listView.setAdapter(adapter);
 
+        if (null == getArguments()) {
+            return listView;
+        }
         MessagesService service = Api.getRestAdapter().create(MessagesService.class);
         service.thread(getArguments().getInt(ARG_ITEM_ID), new Callback<List<Message>>() {
             @Override
