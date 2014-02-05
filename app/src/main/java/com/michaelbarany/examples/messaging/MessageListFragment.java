@@ -6,6 +6,8 @@ import android.support.v4.app.ListFragment;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.michaelbarany.examples.messaging.api.Api;
 import com.michaelbarany.examples.messaging.api.Message;
 import com.michaelbarany.examples.messaging.api.MessagesService;
@@ -13,11 +15,15 @@ import retrofit.Callback;
 import retrofit.RetrofitError;
 import retrofit.client.Response;
 
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 
 public class MessageListFragment extends ListFragment {
+    private static final String STATE_DATA = "state_data";
     private static final String STATE_ACTIVATED_POSITION = "activated_position";
 
+    private List<Message> mData;
     private Callbacks mCallbacks;
 
     /**
@@ -31,10 +37,7 @@ public class MessageListFragment extends ListFragment {
      * selections.
      */
     public interface Callbacks {
-        public void onItemSelected(int threadId);
-    }
-
-    public MessageListFragment() {
+        public void onItemSelected(int threadId, String title);
     }
 
     @Override
@@ -47,11 +50,26 @@ public class MessageListFragment extends ListFragment {
             android.R.id.text1)
         );
 
+        if (null != savedInstanceState) {
+            String data = savedInstanceState.getString(STATE_DATA);
+            if (null != data) {
+                Type collectionType = new TypeToken<List<Message>>(){}.getType();
+                Gson gson = new Gson();
+                mData = gson.fromJson(data, collectionType);
+                getListAdapter().addAll(mData);
+                return;
+            }
+        }
+
+        getActivity().setProgressBarIndeterminate(true);
+        getActivity().setProgressBarVisibility(true);
         MessagesService service = Api.getRestAdapter().create(MessagesService.class);
         service.inbox(new Callback<List<Message>>() {
             @Override
             public void success(List<Message> messages, Response response) {
+                mData = new ArrayList<>(messages);
                 getListAdapter().addAll(messages);
+                getActivity().setProgressBarVisibility(false);
             }
 
             @Override
@@ -97,7 +115,8 @@ public class MessageListFragment extends ListFragment {
         // Notify the active callbacks interface (the activity, if the
         // fragment is attached to one) that an item has been selected.
         if (null != mCallbacks) {
-            mCallbacks.onItemSelected(getListAdapter().getItem(position).threadId);
+            Message item = getListAdapter().getItem(position);
+            mCallbacks.onItemSelected(item.threadId, item.sender.name);
         }
     }
 
@@ -107,6 +126,8 @@ public class MessageListFragment extends ListFragment {
         if (mActivatedPosition != ListView.INVALID_POSITION) {
             outState.putInt(STATE_ACTIVATED_POSITION, mActivatedPosition);
         }
+        Gson gson = new Gson();
+        outState.putString(STATE_DATA, gson.toJson(mData));
     }
 
     /**
